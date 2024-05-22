@@ -24,7 +24,6 @@
                     requestUrl.searchParams.set('receiver', receiver);
                     const message = await fetch(requestUrl).then(res => res.json());
                     if (message != null) {
-                        console.log(message);
                         window.parent.postMessage({
                             receiver, message
                         }, '*');
@@ -37,7 +36,6 @@
         })()
         const link = new URL(`${htmlHost}/input.html`);
         link.searchParams.set('receiver', receiver);
-        console.log(link.href)
         const qrcode = new QRCode(document.getElementById('qrcode'), {
             text: link.href,
             width: 256,

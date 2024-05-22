@@ -130,7 +130,6 @@
             requestUrl.searchParams.set('receiver', receiver);
             requestUrl.searchParams.set('message', encryptedText);
             await fetch(requestUrl);
-            console.log(encryptedText);
             if (password == input.value) {
                 inputChanged = false;
             }
