@@ -3,7 +3,7 @@
 
 <head>
     <title>Password From Phone QR Code</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="./qrcode.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -14,7 +14,7 @@
 <body>
     <div id="qrcode"></div>
     <script>
-        const htmlHost = 'https://passwordfromphone.github.io/'
+        const htmlHost = 'https://supersafemessage.github.io/PasswordFromPhone/'
         const apiHost = "https://password-from-phone-proxy.maggch.workers.dev"
         const receiver = new URLSearchParams(window.location.search).get("receiver");
         (async function () {

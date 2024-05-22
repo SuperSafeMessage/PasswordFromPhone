@@ -1,8 +1,6 @@
 // ==UserScript==
-// @name         Password Input Focus Iframe
-// @namespace    http://tampermonkey.net/
+// @name         Password From Phone
 // @version      1.0
-// @description  Show an iframe below password inputs on focus
 // @author       Your Name
 // @match        *://*/*
 // @grant        GM_addElement
@@ -10,7 +8,7 @@
 
 (function () {
     'use strict';
-    const htmlHost = 'https://passwordfromphone.github.io/'
+    const htmlHost = 'https://supersafemessage.github.io/PasswordFromPhone/'
 
     // Generate RSA key pair
     async function generateRSAKeyPair() {
