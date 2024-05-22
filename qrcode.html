@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Password From Phone QR Code</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="qrcode"></div>
+    <script>
+        const htmlHost = 'https://passwordfromphone.github.io/'
+        const apiHost = "https://password-from-phone-proxy.maggch.workers.dev"
+        const receiver = new URLSearchParams(window.location.search).get("receiver");
+        (async function () {
+            while (true) {
+                try {
+                    const requestUrl = new URL(`${apiHost}/receive`)
+                    requestUrl.searchParams.set('receiver', receiver);
+                    const message = await fetch(requestUrl).then(res => res.json());
+                    if (message != null) {
+                        console.log(message);
+                        window.parent.postMessage({
+                            receiver, message
+                        }, '*');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+        })()
+        const link = new URL(`${htmlHost}/input.html`);
+        link.searchParams.set('receiver', receiver);
+        console.log(link.href)
+        const qrcode = new QRCode(document.getElementById('qrcode'), {
+            text: link.href,
+            width: 256,
+            height: 256,
+            correctLevel: QRCode.CorrectLevel.L
+        });
+    </script>
+</body>
+
+</html>

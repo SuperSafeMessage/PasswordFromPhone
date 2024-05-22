@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body,
+        html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: white;
+        }
+
+        input[type=password] {
+            width: 80%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <input type="password" placeholder="Enter password">
+
+    <script>
+        const apiHost = "https://password-from-phone-proxy.maggch.workers.dev"
+        async function importRSAKeyPair(publicKeyBase64) {
+            let publicKey;
+            // Convert the Base64-encoded public key to a binary format
+            const publicKeyBinary = atob(publicKeyBase64);
+
+            // Convert the binary data to an ArrayBuffer
+            const publicKeyBuffer = new ArrayBuffer(publicKeyBinary.length);
+            const publicKeyArray = new Uint8Array(publicKeyBuffer);
+            for (let i = 0; i < publicKeyBinary.length; i++) {
+                publicKeyArray[i] = publicKeyBinary.charCodeAt(i);
+            }
+
+            // Import the public key using SubtleCrypto.importKey
+            publicKey = await window.crypto.subtle.importKey(
+                'spki',
+                publicKeyBuffer,
+                {
+                    name: 'RSA-OAEP',
+                    hash: { name: 'SHA-256' },
+                },
+                true,
+                ['encrypt']
+            );
+
+            return publicKey
+        }
+
+
+        // Concatenate multiple ArrayBuffers into a single ArrayBuffer
+        function concatArrayBuffers(...buffers) {
+            const totalLength = buffers.reduce((sum, buffer) => sum + buffer.byteLength, 0);
+            const result = new Uint8Array(totalLength);
+            let offset = 0;
+            for (const buffer of buffers) {
+                result.set(new Uint8Array(buffer), offset);
+                offset += buffer.byteLength;
+            }
+            return result.buffer;
+        }
+
+        // Convert an ArrayBuffer to a Base64 string
+        function arrayBufferToBase64(buffer) {
+            const binary = new Uint8Array(buffer).reduce((acc, i) => acc += String.fromCharCode([i]), '');
+            return btoa(binary);
+        }
+
+        // Convert a string to an ArrayBuffer
+        function stringToArrayBuffer(str) {
+            const encoder = new TextEncoder();
+            return encoder.encode(str);
+        }
+
+        // Split an ArrayBuffer into chunks of a given size
+        function splitArrayBuffer(buffer, chunkSize) {
+            const chunks = [];
+            let offset = 0;
+            while (offset < buffer.byteLength) {
+                const chunk = buffer.slice(offset, offset + chunkSize);
+                chunks.push(chunk);
+                offset += chunk.byteLength;
+            }
+            return chunks;
+        }
+
+        // Encrypt a string using RSA-OAEP with the public key and return the result as a Base64 string
+        async function encryptWithPublicKey(publicKey, plaintext) {
+            const encodedPlaintext = stringToArrayBuffer(plaintext);
+            const keySize = publicKey.algorithm.modulusLength / 8;
+            const chunkSize = keySize - 66; // OAEP padding is 66 bytes
+            const chunks = splitArrayBuffer(encodedPlaintext, chunkSize);
+            const encryptedChunks = [];
+            for (const chunk of chunks) {
+                const encryptedChunk = await window.crypto.subtle.encrypt(
+                    {
+                        name: 'RSA-OAEP',
+                    },
+                    publicKey,
+                    chunk
+                );
+                encryptedChunks.push(encryptedChunk);
+            }
+            const encrypted = concatArrayBuffers(...encryptedChunks);
+            const encryptedBase64 = arrayBufferToBase64(encrypted);
+            return encryptedBase64;
+        }
+
+        const input = document.querySelector("input");
+
+        const receiver = new URLSearchParams(window.location.search).get("receiver");
+
+        let inputChanged = false;
+        async function submitPassword() {
+            const password = input.value;
+            const publicKey = await importRSAKeyPair(receiver);
+            const encryptedText = await encryptWithPublicKey(publicKey, password);
+            const requestUrl = new URL(`${apiHost}/send`);
+            requestUrl.searchParams.set('receiver', receiver);
+            requestUrl.searchParams.set('message', encryptedText);
+            await fetch(requestUrl);
+            console.log(encryptedText);
+            if (password == input.value) {
+                inputChanged = false;
+            }
+        }
+
+        input.addEventListener("input", () => {
+            inputChanged = true;
+        });
+        (async function () {
+            while (true) {
+                if (inputChanged) {
+                    try {
+                        await submitPassword();
+                    } catch (e) {
+                        console.error(e);
+                    }
+                }
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+        })()
+    </script>
+</body>
+
+</html>
