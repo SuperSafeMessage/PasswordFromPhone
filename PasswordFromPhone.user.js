@@ -111,7 +111,7 @@
     let _iframe = null;
     let shadowContainer = null;
     let onReceiveMessage = null;
-    
+
     async function ensureIframe() {
         if (_iframe !== null) {
             return _iframe;
@@ -124,7 +124,7 @@
         const { publicKey, privateKey } = await generateRSAKeyPair();
         let receiver = await publicKeyToBase64(publicKey);
         window.addEventListener('message', async function (event) {
-            if(event.data.receiver === receiver){
+            if (event.data.receiver === receiver) {
                 const decrypted = await decryptWithPrivateKey(privateKey, event.data.message);
                 onReceiveMessage(decrypted);
             }
@@ -146,6 +146,18 @@
             const iframe = await ensureIframe();
             onReceiveMessage = (message) => {
                 input.value = message;
+                var eventInput = new Event('input', {
+                    bubbles: true,
+                    cancelable: true
+                });
+                input.dispatchEvent(eventInput);
+
+                var eventChange = new Event('change', {
+                    bubbles: true,
+                    cancelable: true
+                });
+
+                input.dispatchEvent(eventChange);
             }
             shadowContainer.style.top = `${rect.bottom + window.scrollY}px`;
             shadowContainer.style.left = `${rect.left + window.scrollX}px`;
@@ -154,7 +166,7 @@
         }
     }
 
-   async function handleBlurEvent(event) {
+    async function handleBlurEvent(event) {
         if (event.target.matches('input[type="password"]')) {
             const iframe = await ensureIframe();
             iframe.style.display = 'none';
