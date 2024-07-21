@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Password From Phone
 // @version      1.0
-// @author       Your Name
+// @author       SuperSafeMessage
 // @match        *://*/*
 // @grant        GM_addElement
 // ==/UserScript==
