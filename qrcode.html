@@ -23,7 +23,6 @@
                 try {
                     const requestUrl = new URL(`${apiHost}/receive`)
                     requestUrl.searchParams.set('receiver', receiver);
-                    requestUrl.searchParams.set('host', host);
                     const message = await fetch(requestUrl).then(res => res.json());
                     if (message != null) {
                         window.parent.postMessage({
@@ -38,6 +37,7 @@
         })()
         const link = new URL(`${htmlHost}/input.html`);
         link.searchParams.set('receiver', receiver);
+        link.searchParams.set('host', host);
         const qrcode = new QRCode(document.getElementById('qrcode'), {
             text: link.href,
             width: 256,
