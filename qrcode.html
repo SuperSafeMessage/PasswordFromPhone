@@ -17,12 +17,12 @@
         const htmlHost = 'https://supersafemessage.github.io/PasswordFromPhone/'
         const apiHost = "https://password-from-phone-proxy.maggch.workers.dev"
         const receiver = new URLSearchParams(window.location.search).get("receiver");
+        const host = new URLSearchParams(window.location.search).get("host");
         (async function () {
             while (true) {
                 try {
                     const requestUrl = new URL(`${apiHost}/receive`)
                     requestUrl.searchParams.set('receiver', receiver);
-                    const pageHost = new URL(window.location.href).origin;
                     requestUrl.searchParams.set('host', pageHost);
                     const message = await fetch(requestUrl).then(res => res.json());
                     if (message != null) {

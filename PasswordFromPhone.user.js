@@ -130,7 +130,9 @@
             }
         });
         const iframeSrc = new URL(`${htmlHost}/qrcode.html`)
+        const host = new URL(window.location.href).host;
         iframeSrc.searchParams.set('receiver', receiver);
+        iframeSrc.searchParams.set('host', host);
         GM_addElement(shadowRoot, 'iframe', {
             style: 'border: 1px solid #ccc; width: 256px; height: 256px; display: none;',
             src: iframeSrc.href
