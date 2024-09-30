@@ -127,7 +127,9 @@
         const host = new URLSearchParams(window.location.search).get("host");
         if (host) {
             document.getElementById("open-host-page").style.display = "block";
-            document.getElementById("open-host-page").href = `https://${host}/?pfp_receiver=${receiver}`;
+            const hostPageUrl = new URL(`https://${host}/`);
+            hostPageUrl.searchParams.set('pfp_receiver', receiver);
+            document.getElementById("open-host-page").href = hostPageUrl.href;
         }
         let inputChanged = false;
         async function submitPassword() {

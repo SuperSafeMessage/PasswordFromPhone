@@ -113,7 +113,7 @@
         height: 100%;
         z-index: 9999;
     `;
-    document.body.appendChild(shadowHost);
+    (document.body || document.documentElement).appendChild(shadowHost);
 
     // Create shadow root
     const shadowRoot = shadowHost.attachShadow({ mode: 'closed' });
