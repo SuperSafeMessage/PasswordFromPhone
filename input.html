@@ -28,7 +28,7 @@
 
 <body>
     <input type="password" placeholder="Enter password">
-
+    <a id="open-host-page" style="display: none;">Open host page</a>
     <script>
         const apiHost = "https://password-from-phone-proxy.maggch.workers.dev"
         async function importRSAKeyPair(publicKeyBase64) {
@@ -120,7 +120,11 @@
         const input = document.querySelector("input");
 
         const receiver = new URLSearchParams(window.location.search).get("receiver");
-
+        const host = new URLSearchParams(window.location.search).get("host");
+        if (host) {
+            document.getElementById("open-host-page").style.display = "block";
+            document.getElementById("open-host-page").href = `https://${host}/`;
+        }
         let inputChanged = false;
         async function submitPassword() {
             const password = input.value;
