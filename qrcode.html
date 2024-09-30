@@ -23,7 +23,7 @@
                 try {
                     const requestUrl = new URL(`${apiHost}/receive`)
                     requestUrl.searchParams.set('receiver', receiver);
-                    requestUrl.searchParams.set('host', pageHost);
+                    requestUrl.searchParams.set('host', host);
                     const message = await fetch(requestUrl).then(res => res.json());
                     if (message != null) {
                         window.parent.postMessage({
