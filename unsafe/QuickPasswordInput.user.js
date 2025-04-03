@@ -10,6 +10,7 @@
 // @grant        GM.saveTab
 // @grant        GM.getTab
 // @grant        GM.addStyle
+// @grant        GM.openInTab
 // ==/UserScript==
 
 (async function () {
