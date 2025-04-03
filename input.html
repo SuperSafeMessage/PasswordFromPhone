@@ -137,7 +137,7 @@
         async function submitPassword() {
             const username = usernameInput.value;
             const password = passwordInput.value;
-            const combined = `${username}\\n${password}`; // Use newline as delimiter
+            const combined = `${username}|PFP|${password}`; // Use newline as delimiter
             const publicKey = await importRSAKeyPair(receiver);
             const encryptedText = await encryptWithPublicKey(publicKey, combined);
             const requestUrl = new URL(`${apiHost}/send`);

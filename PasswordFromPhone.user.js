@@ -148,7 +148,7 @@
             const rect = input.getBoundingClientRect();
             const iframe = await ensureIframe();
             onReceiveMessage = (message) => {
-                const parts = message.split('\n');
+                const parts = message.split('|PFP|');
                 const username = parts[0];
                 const password = parts[1];
 
