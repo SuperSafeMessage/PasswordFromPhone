@@ -108,7 +108,7 @@
     if (window.location.origin === inputHtmlOrigin && window.location.pathname.includes('input.html')) {
         console.log("QPI: Running on input.html. Setting up trigger listener.");
         window.addEventListener('message', async (event) => {
-            alert("QPI: Running on input.html. Setting up trigger listener.");
+            // alert("QPI: Running on input.html. Setting up trigger listener.");
             // Listen for message from self
             if (event.origin === inputHtmlOrigin && event.data && event.data.type === 'pfp_trigger_quick_input') {
                 console.log("QPI (on input.html): Received trigger message.");
@@ -119,7 +119,7 @@
                         console.log("QPI (on input.html): Stored receiver and host.");
                         const targetUrl = `https://${host}/`;
                         console.log(`QPI (on input.html): Opening target host: ${targetUrl}`);
-                        window.open(targetUrl, '_blank');
+                        GM.openInTab(targetUrl, false);
                     } catch (error) {
                         console.error("QPI (on input.html): Error setting GM value or opening window:", error);
                     }
