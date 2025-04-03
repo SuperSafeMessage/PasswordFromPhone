@@ -109,7 +109,7 @@
         console.log("QPI: Running on input.html. Setting up trigger listener.");
         window.addEventListener('message', async (event) => {
             // Listen for message from self
-            if (event.source === window && event.origin === inputHtmlOrigin && event.data && event.data.type === 'pfp_trigger_quick_input') {
+            if (event.origin === inputHtmlOrigin && event.data && event.data.type === 'pfp_trigger_quick_input') {
                 console.log("QPI (on input.html): Received trigger message.");
                 const { receiver, host } = event.data;
                 if (receiver && host) {
