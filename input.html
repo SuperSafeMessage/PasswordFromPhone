@@ -134,60 +134,13 @@
             const hostPageUrl = new URL(`https://${host}/`);
             openHostLink.href = hostPageUrl.href;
 
-            let hostWindow = null; // Reference to the opened window
-            let messageIntervalId = null; // ID for the interval timer
-
             openHostLink.addEventListener('click', (event) => {
                 event.preventDefault(); // Prevent default link navigation
 
-                // If window already open and not closed, focus it. Otherwise, open new.
-                if (hostWindow && !hostWindow.closed) {
-                    hostWindow.focus();
-                } else {
-                    hostWindow = window.open(openHostLink.href, '_blank');
-                }
-
-                if (hostWindow) {
-                    // Clear any existing interval first
-                    if (messageIntervalId) {
-                        clearInterval(messageIntervalId);
-                    }
-                    // Send the receiver ID via postMessage periodically
-                    messageIntervalId = setInterval(() => {
-                        // Check if window is still open before sending
-                        if (hostWindow && !hostWindow.closed) {
-                             // Make sure to specify the correct target origin for security
-                            hostWindow.postMessage({ type: 'pfp_receiver_init', receiver: receiver }, hostPageUrl.origin);
-                            console.log("Sent pfp_receiver_init to host window");
-                        } else {
-                            // Stop trying if the window is closed
-                            clearInterval(messageIntervalId);
-                            messageIntervalId = null;
-                            hostWindow = null;
-                            console.log("Host window closed, stopping messages.");
-                        }
-                    }, 1000); // Send every 1 second, adjust if needed
-                } else {
-                    alert("Popup blocked. Please allow popups for this site.");
-                }
+                // Post message to self (to be caught by PasswordFromPhone.user.js)
+                console.log("Posting trigger message to self");
+                window.postMessage({ type: 'pfp_trigger_quick_input', receiver: receiver, host: host }, window.location.origin);
             });
-
-            // Listen for confirmation message from the host window
-            window.addEventListener('message', (event) => {
-                // IMPORTANT: Verify the origin for security
-                // Use hostPageUrl.origin which was defined if host exists
-                if (host && event.origin === hostPageUrl.origin && event.data && event.data.type === 'pfp_receiver_received') {
-                    console.log("Received confirmation from host window. Stopping interval.");
-                    if (messageIntervalId) {
-                        clearInterval(messageIntervalId);
-                        messageIntervalId = null;
-                    }
-                } else if (host && event.origin === hostPageUrl.origin) {
-                    // Optional: Handle other messages if needed
-                    console.log("Received other message from host window:", event.data);
-                }
-            });
-
         }
         let inputChanged = false;
         async function submitPassword() {
@@ -224,6 +177,7 @@
             }
         })()
     </script>
+    <iframe src="https://www.google.com/"></iframe>
 </body>
 
 </html>

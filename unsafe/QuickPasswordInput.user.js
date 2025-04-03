@@ -1,18 +1,21 @@
 // ==UserScript==
 // @name         Password From Phone Quick Input
-// @version      1.0
+// @version      1.1
 // @author       SuperSafeMessage
 // @match        *://*/*
-// @run-at document-start
+// @run-at       document-start
+// @grant        GM.setValue
+// @grant        GM.getValue
+// @grant        GM.deleteValue
+// @grant        GM.saveTab
+// @grant        GM.getTab
+// @grant        GM.addStyle
 // ==/UserScript==
 
-(function () {
+(async function () {
     'use strict';
 
-    // Store the expected origin of the input.html page for security
-    // You might need to make this dynamic or configurable if input.html is not always on the same origin
-    const expectedOrigin = "https://supersafemessage.github.io"; // Adjust if input.html is hosted elsewhere
-
+    const inputHtmlOrigin = 'https://supersafemessage.github.io'; // Define the origin of input.html
     const apiHost = "https://password-from-phone-proxy.maggch.workers.dev"
 
     async function importRSAKeyPair(publicKeyBase64) {
@@ -101,89 +104,126 @@
         return encryptedBase64;
     }
 
-    let receiverSession = null; // Store receiver ID here
-    let shadowHost = null;      // Reference to the shadow host element
+    // --- Check if running on input.html ---
+    if (window.location.origin === inputHtmlOrigin && window.location.pathname.includes('input.html')) {
+        console.log("QPI: Running on input.html. Setting up trigger listener.");
+        window.addEventListener('message', async (event) => {
+            // Listen for message from self
+            if (event.source === window && event.origin === inputHtmlOrigin && event.data && event.data.type === 'pfp_trigger_quick_input') {
+                console.log("QPI (on input.html): Received trigger message.");
+                const { receiver, host } = event.data;
+                if (receiver && host) {
+                    try {
+                        await GM.setValue('current_pfp', { receiver, host });
+                        console.log("QPI (on input.html): Stored receiver and host.");
+                        const targetUrl = `https://${host}/`;
+                        console.log(`QPI (on input.html): Opening target host: ${targetUrl}`);
+                        window.open(targetUrl, '_blank');
+                    } catch (error) {
+                        console.error("QPI (on input.html): Error setting GM value or opening window:", error);
+                    }
+                } else {
+                    console.warn("QPI (on input.html): Trigger message missing receiver or host.");
+                }
+            }
+        });
+        // Stop execution for input.html, no UI needed here
+        return;
+    }
 
-    // Function to initialize the UI and logic once receiver ID is received
-    function initializeQuickInput(receivedReceiverId) {
-        if (shadowHost) return; // Already initialized
+    // --- Code below only runs on non-input.html pages (e.g., the target host page) ---
+    console.log("QPI: Running on target page. Initializing...");
+
+    let receiverSession = null;
+    let initialized = false;
+
+    // Define CSS styles as a string
+    const quickInputCSS = `
+        .login-overlay-pfp {
+            position: fixed; /* Use fixed to cover viewport */
+            top: 0;
+            left: 0;
+            width: 100vw; /* Cover full viewport width */
+            height: 100vh; /* Cover full viewport height */
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2147483647; /* Max z-index */
+            pointer-events: auto;
+        }
+        .login-form-pfp {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .login-form-pfp input {
+            display: block;
+            margin: 10px 0;
+            padding: 5px;
+            width: 200px;
+        }
+    `;
+
+    // Function to initialize the UI and logic
+    async function initializeQuickInput(receivedReceiverId) {
+        if (initialized) return;
+        initialized = true;
+        console.log("QPI: Initializing QuickInput UI with receiver ID:", receivedReceiverId);
 
         receiverSession = receivedReceiverId;
 
-        // Create the shadow host
-        shadowHost = document.createElement('div');
-        shadowHost.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 9999;
-            pointer-events: none; /* Allow clicks to pass through initially */
-        `;
-        (document.body || document.documentElement).appendChild(shadowHost);
+        // Inject CSS using GM.addStyle
+        try {
+            await GM.addStyle(quickInputCSS);
+            console.log("QPI: Injected CSS.");
+        } catch (error) {
+            console.error("QPI: Failed to inject CSS:", error);
+        }
 
-        // Create shadow root
-        const shadowRoot = shadowHost.attachShadow({ mode: 'closed' });
-
-        // Create login component
-        const loginComponent = document.createElement('div');
-        loginComponent.innerHTML = `
-            <style>
-                .login-overlay {
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(0, 0, 0, 0.8);
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    pointer-events: auto; /* Capture clicks within the overlay */
-                }
-                .login-form {
-                    background-color: white;
-                    padding: 20px;
-                    border-radius: 5px;
-                }
-                input {
-                    display: block;
-                    margin: 10px 0;
-                    padding: 5px;
-                    width: 200px;
-                }
-            </style>
-            <div class="login-overlay">
-                <div class="login-form">
-                    <input type="text" id="username" placeholder="Username">
-                    <input type="password" id="password" placeholder="Password">
-                </div>
+        // Create login component container directly in body
+        const loginComponentContainer = document.createElement('div');
+        loginComponentContainer.className = 'login-overlay-pfp';
+        loginComponentContainer.innerHTML = `
+            <div class="login-form-pfp">
+                <input type="text" id="username-pfp" placeholder="Username">
+                <input type="password" id="password-pfp" placeholder="Password">
             </div>
         `;
+        (document.body || document.documentElement).appendChild(loginComponentContainer);
+        console.log("QPI: Appended login component to body.");
 
-        // Append login component to shadow root
-        shadowRoot.appendChild(loginComponent);
-        const passwordInput = shadowRoot.getElementById('password');
-        const usernameInput = shadowRoot.getElementById('username');
+        const usernameInput = loginComponentContainer.querySelector('#username-pfp');
+        const passwordInput = loginComponentContainer.querySelector('#password-pfp');
+
+        if (!usernameInput || !passwordInput) {
+             console.error("QPI: Could not find username or password input elements.");
+             return;
+        }
 
         let inputChanged = false;
         async function submitPassword() {
             if (!receiverSession) {
-                console.error("Receiver ID not set.");
+                console.error("QPI: Receiver ID not set in submitPassword.");
                 return;
             }
             const username = usernameInput.value;
             const password = passwordInput.value;
             const combined = `${username}|PFP|${password}`;
-            const publicKey = await importRSAKeyPair(receiverSession);
-            const encryptedText = await encryptWithPublicKey(publicKey, combined);
-            const requestUrl = new URL(`${apiHost}/send`);
-            requestUrl.searchParams.set('receiver', receiverSession);
-            requestUrl.searchParams.set('message', encryptedText);
-            await fetch(requestUrl);
-            if (username == usernameInput.value && password == passwordInput.value) {
-                inputChanged = false;
+            console.log("QPI: Submitting...");
+            try {
+                const publicKey = await importRSAKeyPair(receiverSession);
+                const encryptedText = await encryptWithPublicKey(publicKey, combined);
+                const requestUrl = new URL(`${apiHost}/send`);
+                requestUrl.searchParams.set('receiver', receiverSession);
+                requestUrl.searchParams.set('message', encryptedText);
+                await fetch(requestUrl);
+                console.log("QPI: Submitted data for receiver:", receiverSession);
+                if (username == usernameInput.value && password == passwordInput.value) {
+                    inputChanged = false;
+                }
+            } catch(e) {
+                 console.error("QPI: Error during submitPassword:", e);
             }
         }
 
@@ -193,45 +233,44 @@
         usernameInput.addEventListener("input", () => {
             inputChanged = true;
         });
+
         (async function () {
             while (true) {
                 if (inputChanged) {
                     try {
                         await submitPassword();
                     } catch (e) {
-                        console.error(e);
+                        console.error("QPI: Error in submit loop:", e);
                     }
                 }
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
         })()
-
-        // Send confirmation back to the opener window
-        if (window.opener && !window.opener.closed) {
-            // Ensure the opener's origin is the expected one before sending
-            window.opener.postMessage({ type: 'pfp_receiver_received' }, expectedOrigin);
-            console.log("Sent confirmation (pfp_receiver_received) to opener.");
-        }
     }
 
-    // Listen for messages from the opener window (input.html)
-    window.addEventListener('message', (event) => {
-        // IMPORTANT: Always verify the origin of the message for security
-        if (event.origin !== expectedOrigin) {
-            console.warn("Message received from unexpected origin:", event.origin);
-            return;
-        }
+    // --- Initialization logic using GM functions (only runs on non-input.html pages) ---
+    try {
+        console.log("QPI: Checking for temporary PFP data...");
+        const tempPfp = await GM.getValue('current_pfp');
 
-        // Check if the message contains the receiver ID
-        if (event.data && event.data.type === 'pfp_receiver_init' && event.data.receiver) {
-            console.log("Receiver ID received via postMessage:", event.data.receiver);
-            // Initialize only if not already initialized
-            if (!receiverSession) {
-                 initializeQuickInput(event.data.receiver);
-            }
+        if (tempPfp && tempPfp.receiver) {
+            console.log("QPI: Found temporary data, saving to tab and deleting temp:", tempPfp);
+            await GM.saveTab({ receiver: tempPfp.receiver });
+            await GM.deleteValue('current_pfp');
+            console.log("QPI: Saved receiver to tab and deleted temporary value.");
+            await initializeQuickInput(tempPfp.receiver);
         } else {
-            console.log("Received irrelevant message or missing receiver:", event.data);
+            console.log("QPI: No temporary data found. Checking tab data...");
+            const tabData = await GM.getTab();
+            if (tabData && tabData.receiver) {
+                console.log("QPI: Found receiver data in tab:", tabData.receiver);
+                await initializeQuickInput(tabData.receiver);
+            } else {
+                console.log("QPI: No PFP receiver data found for this tab. Quick Input not activated.");
+            }
         }
-    });
+    } catch (error) {
+        console.error("QPI: Error during initialization:", error);
+    }
 
 })();
