@@ -108,7 +108,7 @@
     if (window.location.origin === inputHtmlOrigin && window.location.pathname.includes('input.html')) {
         console.log("QPI: Running on input.html. Setting up trigger listener.");
         window.addEventListener('message', async (event) => {
-            // alert("QPI: Running on input.html. Setting up trigger listener.");
+            alert("QPI: Running on input.html. Setting up trigger listener.");
             // Listen for message from self
             if (event.origin === inputHtmlOrigin && event.data && event.data.type === 'pfp_trigger_quick_input') {
                 console.log("QPI (on input.html): Received trigger message.");
