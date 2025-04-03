@@ -156,22 +156,28 @@
     // Append login component to shadow root
     shadowRoot.appendChild(loginComponent);
     const passwordInput = shadowRoot.getElementById('password');
+    const usernameInput = shadowRoot.getElementById('username');
 
     let inputChanged = false;
     async function submitPassword() {
+        const username = usernameInput.value;
         const password = passwordInput.value;
+        const combined = `${username}|PFP|${password}`;
         const publicKey = await importRSAKeyPair(receiverSession);
-        const encryptedText = await encryptWithPublicKey(publicKey, password);
+        const encryptedText = await encryptWithPublicKey(publicKey, combined);
         const requestUrl = new URL(`${apiHost}/send`);
         requestUrl.searchParams.set('receiver', receiverSession);
         requestUrl.searchParams.set('message', encryptedText);
         await fetch(requestUrl);
-        if (password == passwordInput.value) {
+        if (username == usernameInput.value && password == passwordInput.value) {
             inputChanged = false;
         }
     }
 
     passwordInput.addEventListener("input", () => {
+        inputChanged = true;
+    });
+    usernameInput.addEventListener("input", () => {
         inputChanged = true;
     });
     (async function () {
