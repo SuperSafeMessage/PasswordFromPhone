@@ -144,10 +144,45 @@
     async function handleFocusEvent(event) {
         if (event.target.matches('input[type="password"]')) {
             const input = event.target;
+            // find the username input before the password input
             const rect = input.getBoundingClientRect();
             const iframe = await ensureIframe();
             onReceiveMessage = (message) => {
-                input.value = message;
+                const parts = message.split('\n');
+                const username = parts[0];
+                const password = parts[1];
+
+                // Attempt to find the username field
+                let usernameInput = null;
+                // Strategy 1: Find previous input sibling
+                let previousElement = input.previousElementSibling;
+                while (previousElement && previousElement.tagName !== 'INPUT') {
+                    previousElement = previousElement.previousElementSibling;
+                }
+                if (previousElement && previousElement.tagName === 'INPUT' && (previousElement.type === 'text' || previousElement.type === 'email')) {
+                    usernameInput = previousElement;
+                }
+                // Strategy 2: Find input with common username attributes within the same form (if applicable)
+                if (!usernameInput && input.form) {
+                    const formInputs = input.form.querySelectorAll('input');
+                    for (const formInput of formInputs) {
+                        if (formInput !== input && (formInput.type === 'text' || formInput.type === 'email') && 
+                            (formInput.name.toLowerCase().includes('user') || formInput.id.toLowerCase().includes('user') || formInput.autocomplete === 'username')) {
+                            usernameInput = formInput;
+                            break;
+                        }
+                    }
+                }
+
+                if (usernameInput) {
+                    usernameInput.value = username;
+                    var usernameEventInput = new Event('input', { bubbles: true, cancelable: true });
+                    usernameInput.dispatchEvent(usernameEventInput);
+                    var usernameEventChange = new Event('change', { bubbles: true, cancelable: true });
+                    usernameInput.dispatchEvent(usernameEventChange);
+                }
+
+                input.value = password;
                 var eventInput = new Event('input', {
                     bubbles: true,
                     cancelable: true

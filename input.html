@@ -28,7 +28,8 @@
 </head>
 
 <body>
-    <input type="password" placeholder="Enter password">
+    <input type="text" id="username" placeholder="Enter username" style="width: 80%; padding: 10px; font-size: 16px; border: 2px solid #ddd; border-radius: 5px; margin-bottom: 10px;">
+    <input type="password" id="password" placeholder="Enter password">
     <a id="open-host-page" style="display: none;">Open host page</a>
     <br>
     <br>
@@ -121,7 +122,8 @@
             return encryptedBase64;
         }
 
-        const input = document.querySelector("input");
+        const usernameInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
 
         const receiver = new URLSearchParams(window.location.search).get("receiver");
         const host = new URLSearchParams(window.location.search).get("host");
@@ -133,19 +135,24 @@
         }
         let inputChanged = false;
         async function submitPassword() {
-            const password = input.value;
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+            const combined = `${username}\\n${password}`; // Use newline as delimiter
             const publicKey = await importRSAKeyPair(receiver);
-            const encryptedText = await encryptWithPublicKey(publicKey, password);
+            const encryptedText = await encryptWithPublicKey(publicKey, combined);
             const requestUrl = new URL(`${apiHost}/send`);
             requestUrl.searchParams.set('receiver', receiver);
             requestUrl.searchParams.set('message', encryptedText);
             await fetch(requestUrl);
-            if (password == input.value) {
+            if (username == usernameInput.value && password == passwordInput.value) {
                 inputChanged = false;
             }
         }
 
-        input.addEventListener("input", () => {
+        usernameInput.addEventListener("input", () => {
+            inputChanged = true;
+        });
+        passwordInput.addEventListener("input", () => {
             inputChanged = true;
         });
         (async function () {
