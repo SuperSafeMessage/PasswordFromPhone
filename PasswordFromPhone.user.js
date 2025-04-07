@@ -154,14 +154,19 @@
 
                 // Attempt to find the username field
                 let usernameInput = null;
-                // Strategy 1: Find previous input sibling
-                let previousElement = input.previousElementSibling;
-                while (previousElement && previousElement.tagName !== 'INPUT') {
-                    previousElement = previousElement.previousElementSibling;
+                
+                // Strategy 1: Find the input field that appears right before the password field
+                const allInputs = Array.from(document.querySelectorAll('input[type="text"], input[type="email"]'));
+                // Get all inputs that appear before the password field in the document
+                const previousInputs = allInputs.filter(inputField => {
+                    return input.compareDocumentPosition(inputField) & Node.DOCUMENT_POSITION_PRECEDING;
+                });
+                
+                // Take the last one (the one right before the password field)
+                if (previousInputs.length > 0) {
+                    usernameInput = previousInputs[previousInputs.length - 1];
                 }
-                if (previousElement && previousElement.tagName === 'INPUT' && (previousElement.type === 'text' || previousElement.type === 'email')) {
-                    usernameInput = previousElement;
-                }
+                
                 // Strategy 2: Find input with common username attributes within the same form (if applicable)
                 if (!usernameInput && input.form) {
                     const formInputs = input.form.querySelectorAll('input');
